@@ -77,7 +77,7 @@ app.get('/', (req, res) => {
 
 // Auth Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/tasks',verifyToken, taskRoutes)
+app.use('/api/tasks', taskRoutes)
 
 
 //404 handler
