@@ -5,8 +5,9 @@ import {
 } from "../validators/authValidators.js";
 import "../config/localPassport.js";
 import User from "../models/users.js";
-import {  hashPassword } from "../helpers/password.js";
+import { hashPassword } from "../helpers/password.js";
 import passport from "passport";
+import jwt from "jsonwebtoken";
 
 export const register = [
   checkSchema(registerValidator),
@@ -67,72 +68,71 @@ export const login = [
       // Check for validation errors
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
-        return res.status(400).json({success: false, errors: errors.array() });
+        return res.status(400).json({ success: false, errors: errors.array() });
       }
 
       // Authenticate user using passport
-      passport.authenticate("local", {session:false},(err, user, info) => {
+      passport.authenticate("local", { session: false }, (err, user, info) => {
         if (err) {
-            console.log('Authentication error:', err);
-            return res.status(500).json({
-                success: false,
-                error: "Server error during authentication",
-            })
+          console.log("Authentication error:", err);
+          return res.status(500).json({
+            success: false,
+            error: "Server error during authentication",
+          });
         }
         // Handle authentication failure
         if (!user) {
-
-            if(info && info.message === "Please log in using Google") {
-                return res.status(401).json({
-                    success: false,
-                    error: "Please log in using Google",
-                    authProvider: "google",
-                });
-            }
+          if (info && info.message === "Please log in using Google") {
+            return res.status(401).json({
+              success: false,
+              error: "Please log in using Google",
+              authProvider: "google",
+            });
+          }
           return res.status(401).json({
             success: false,
             error: info?.message || "Authentication failed",
-            
           });
         }
-       
+
         // AUTHENTICATION SUCCESSFUL: user object is available
 
         // Generate token
         const token = jwt.sign(
-            {
-                id: user._id,
-                email: user.email,
-                username: user.username,
-                authProvider: user.authProvider,
-            }, process.env.JWT_SECRET, {expiresIn: '7d'}
-        )
+          {
+            id: user._id,
+          },
+          process.env.JWT_SECRET,
+          { expiresIn: "7d" }
+        );
 
         // Send response with token
-        res.cookie('jwt', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 1 week
-        })
+        res.cookie("jwt", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "lax",
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
+          path: "/",
+        });
 
         // Send the final message
         return res.status(200).json({
-            success: true,
-            message: "Login successful",
-            user: {
-                id: user._id,
-                username: user.username,
-                email: user.email,
-                authProvider: user.authProvider,
-            },
-        })
+          success: true,
+          message: "Login successful",
+          user: {
+            id: user._id,
+            username: user.username,
+            email: user.email,
+            authProvider: user.authProvider,
+          },
+        });
       })(req, res, next);
     } catch (error) {
       res.status(500).json({
         success: false,
         error: "Server error during login",
-        details: process.env.NODE_ENV === "development" ? error.message : undefined,
+        details:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
       });
     }
   },
@@ -140,15 +140,49 @@ export const login = [
 
 // Logout user
 
-export const logout = (req, res) => {
-    res.clearCookie('jwt', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-    })
+export const logout = 
+  (req, res) => {
+    res.clearCookie("jwt", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    });
 
     res.status(200).json({
-        success: true,
-        message: "Logout successful",
-    })
-}
+      success: true,
+      message: "Logout successful",
+    });
+  }
+
+export const authStatus = 
+  async (req, res) => {
+    try{
+
+        if (req.user) {
+          return res.status(200).json({
+            authenticated: true,
+            user: {
+              _id: req.user._Id,
+              username: req.user.username,
+              email: req.user.email,
+              authProvider: req.user.authProvider,
+            },
+          });
+        } else {
+          return res.status(200).json({
+            authenticated: false,
+            user: null,
+          });
+        }
+    } catch(error) {
+        console.error("Auth status error:", error);
+        res.status(500).json({
+          success: false,
+          error: "Server error checking authentication status",
+          details:
+            process.env.NODE_ENV === "development"
+              ? error.message
+              : undefined,
+        });
+    }
+  }

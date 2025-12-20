@@ -17,13 +17,11 @@ const taskSchema = new mongoose.Schema(
       required: true,
       default: 0,
     },
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
-    updatedAt: {
-      type: Date,
-      default: Date.now,
+    user: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: [true, 'User reference is required'],
+      index: true,
     },
   },
   {
@@ -32,7 +30,7 @@ const taskSchema = new mongoose.Schema(
 );
 
 // Index for faster queries
-taskSchema.index({ position: -1 });
+taskSchema.index({ user: 1, position: 1 });
 
 const Task = mongoose.model("Task", taskSchema);
 

@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
+import User from '../models/users.js';
 
-export const verifyToken = (req, res, next) => {
+export const verifyToken = async (req, res, next) => {
     // Get token from cookies
     const token = req.cookies.jwt;
 
@@ -14,8 +15,15 @@ export const verifyToken = (req, res, next) => {
     try {
         // Verify token
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.userId = decoded.id;
-        req.user = decoded;
+        req.user = await User.findById(decoded.id).select('-password');
+
+        if(!req.user) {
+            return res.status(401).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+        
         next();
     } catch(error){
         // Handle specific JWT errors
@@ -28,7 +36,7 @@ export const verifyToken = (req, res, next) => {
 
         return res.status(401).json({
             success: false,
-            error: 'Token verification failed'
+            error: 'User not Authorized'
         })
     }
 }

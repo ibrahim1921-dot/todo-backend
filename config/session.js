@@ -32,7 +32,10 @@ if(mongoose.connection.readyState === 1) {
     cookie: {
       secure: process.env.NODE_ENV === "production", // Set to true in production
       httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+      path: "/",
     },
 
     store: MongoStore.create({
