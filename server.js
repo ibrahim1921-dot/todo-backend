@@ -55,7 +55,7 @@ const corsOptions = {
 
 // Middleware
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // Enable pre-flight for all routes
+app.options(/(.*)/, cors(corsOptions)); // Enable pre-flight for all routes
 
 // Trust proxy
 if(process.env.NODE_ENV === "production") {
