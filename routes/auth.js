@@ -41,6 +41,10 @@ router.get(
     try{
     const user = req.user;
 
+    if(!user) {
+        return res.redirect(`${process.env.CLIENT_URL}/login?error=auth_failed`);
+    }
+
     // Here you can create a JWT
     const token = jwt.sign(
         {
@@ -52,14 +56,15 @@ router.get(
     res.cookie("jwt", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // ✅ 'none' for cross-origin
       maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
     });
 
     // Redirect or respond with token
-    res.redirect("http://localhost:5173/dashboard?auth=success");
+    res.redirect(`${process.env.CLIENT_URL}/dashboard?auth=success`);
 } catch (error) {
     console.error("Error during Google OAuth redirect:", error);
-    res.redirect("http://localhost:5173/login?error=redirect_failed");
+    res.redirect(`${process.env.CLIENT_URL}/login?error=server_error`);
 }
   }
 );
