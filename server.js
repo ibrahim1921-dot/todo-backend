@@ -3,7 +3,6 @@ import 'dotenv/config';
 import cors from 'cors';
 import passport from 'passport';
 import helmet from 'helmet';
-import { verifyToken } from './middlewares/verifyToken.js';
 import cookieParser from 'cookie-parser';
 
 
@@ -25,18 +24,43 @@ const PORT = process.env.PORT || 5000;
 //Connect to database
 await connectDB();
 
+// CORS confiuration for production and development environments
+const corsOptions = {
+  origin: function(origin, callback) {
+    const allowedOrigins = [
+      "http://localhost:5173",
+      "http://localhost:5174",
+      "http://127.0.0.1:5173",
+      "http://127.0.0.1:5174",
+      process.env.CLIENT_URL,
+      process.env.CLIENT_URL_STAGE
+    ].filter(Boolean); // Remove undefined values
+
+    // Allow requests with no origin (like mobile apps, postman,curl, etc)
+    if(!origin) return callback(null, true);
+
+    if(allowedOrigins.includes(origin)) {
+      callback(null, true);
+    }else {
+      console.warn(`CORS policy: Blocking request from origin ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ['content-Type', 'Authorization'],
+  exposedHeaders: ['set-Cookie'],
+  maxAge: 86400, // 24 hours
+};
+
 // Middleware
-app.use(
-  cors({
-    origin:
-      process.env.NODE_ENV === "production"
-        ? [process.env.CLIENT_URL, "https://todo-frontend-two-xi.vercel.app/"]
-        : "http://localhost:5173",
-    credentials: true,
-    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ['content-Type', 'Authorization'],
-  })
-);
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // Enable pre-flight for all routes
+
+// Trust proxy
+if(process.env.NODE_ENV === "production") {
+  app.set('trust proxy', 1); // Trust first proxy
+}
 
 app.use(
   helmet({
@@ -70,7 +94,7 @@ app.use(
 );
 
 // Body parsers
-app.use(express.json());
+app.use(express.json({limit: '10mb'}));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
@@ -101,9 +125,21 @@ app.use((req, res, next) => {
 // Global error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({
-    message: "An unexpected error occurred!",
-    error: process.env.NODE_ENV === "production" ? err.message : undefined,
+
+  // Prevent error details from leaking in production
+  const errorResponse = {
+    error: process.env.NODE_ENV === "production" ? "Internal Server Error" : err.message,
+    ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
+  }
+  res.status(err.status || 500).json(errorResponse);
+});
+
+// Graceful Shutdown
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, closing server gracefully...');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
   })
 })
 

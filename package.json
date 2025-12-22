@@ -1,5 +1,5 @@
 {
-  "name": "server",
+  "name": "task manager api",
   "version": "1.0.0",
   "type": "module",
   "engines": {
@@ -11,8 +11,8 @@
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["task-manager", "backend", "api", "todo", "list", "express", "nodejs", "mongodb"],
+  "author": "Abdul-Sobur Ibrahim",
   "license": "ISC",
   "dependencies": {
     "bcrypt": "^6.0.0",
