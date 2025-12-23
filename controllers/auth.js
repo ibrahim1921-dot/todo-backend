@@ -110,7 +110,7 @@ export const login = [
         res.cookie("jwt", token, {
           httpOnly: true,
           secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
+          sameSite: "none", // ✅ 'none' for cross-origin
           maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
           path: "/",
         });
