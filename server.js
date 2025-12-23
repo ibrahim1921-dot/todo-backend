@@ -30,10 +30,7 @@ const corsOptions = {
     const allowedOrigins = [
       "http://localhost:5173",
       "http://localhost:5174",
-      "http://127.0.0.1:5173",
-      "http://127.0.0.1:5174",
-      "https://todo-frontend-gprf.vercel.app",
-      process.env.CLIENT_URL_STAGE
+      "https://todo-frontend-gpfr.vercel.app",
     ].filter(Boolean); // Remove undefined values
 
     // Allow requests with no origin (like mobile apps, postman,curl, etc)
