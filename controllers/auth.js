@@ -109,7 +109,7 @@ export const login = [
         // Send response with token
         res.cookie("jwt", token, {
           httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
+          secure: true,
           sameSite: "none", // ✅ 'none' for cross-origin
           maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
           path: "/",
